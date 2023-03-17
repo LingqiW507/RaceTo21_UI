@@ -1,0 +1,337 @@
+﻿@page "/"
+
+
+<div class="container">
+
+    @*Game Title*@
+    <div class="row justify-content-center mb-4">
+        <div class="col-sm-4 text-center rounded shadow p-2" style="background-color:#FFD8CE">
+
+            <h1 style="color:#00A9D3">Race To 21</h1>
+
+        </div>
+    </div>
+
+    @*Get Names UI*@
+    @if (raceTo21.nextTask == GameTask.GetNames)
+    {
+
+        <div class="row justify-content-center">
+            <div class="col-sm-auto text-center shadow py-2" style="border-top: #d9f2a5 8px solid; background-color:#F4FCE4">
+
+                <h6>Click & Add Your Name! </h6>
+            </div>
+        </div>
+        <div class="row justify-content-between">
+            @for (int i = 0; i < 8; i++)
+            {
+                int playerIndex = i;
+                <div class="col-sm-auto text-center shadow rounded p-4 my-3" style="background-color:#c6e0fc;">
+                    <input class="form-control bg-transparent" type="text"
+                           placeholder="Add a player" @bind="raceTo21.players[playerIndex].name">
+                </div>
+            }
+
+
+        </div>
+        <div class="row justify-content-center mt-5">
+            <div class="col-sm-auto">
+
+                <button type="button" class="btn btn-info" @onclick="StartPlay"> Let's Start! </button>
+
+            </div>
+        </div>
+
+    }
+    @*Player Turn UI*@
+    else if (raceTo21.nextTask == GameTask.PlayerTurn)
+    {
+        <div class="row">
+            @*buttons*@
+            <div class="col-3">
+                <div class="row align-items-center">
+                    <div class="col-auto">
+                        <button type="button" class="btn btn-block rounded-circle"
+                                style="background-color:#cdef91" @onclick="stay">
+                            STAY
+                        </button>
+                    </div>
+                    <div class="col">
+                        <button type="button" class="btn btn-block my-1" style="background-color:#71e3f7" @onclick="() => PickCard(1)">Pick One Card</button>
+                        <button type="button" class="btn btn-block my-1" style="background-color:#71e3f7" @onclick="() => PickCard(2)">Pick Two Cards</button>
+                        <button type="button" class="btn btn-block my-1" style="background-color:#71e3f7" @onclick="() => PickCard(3)">Pick Three Cards</button>
+                    </div>
+                </div>
+            </div>
+            @*players*@
+            <div class="col">
+                <div class="row justify-content-around">
+                    @for (int i = 0; i < raceTo21.numberOfPlayers; i++)
+                    {
+                        int playerIndex = i;
+                        Player player = raceTo21.players[playerIndex];
+                        //轮到该玩家时检查是否可以拿牌
+                        @if (playerIndex == raceTo21.currentPlayer)
+                        {
+                            if (player.status == PlayerStatus.stay || player.status == PlayerStatus.bust)
+                            {
+                                NextPlayer();
+                            }
+                        }
+
+
+                        <div class="col-sm-3 text-center shadow rounded p-4 m-2" style="background-color:#c6e0fc;">
+                            <div class="col-sm-auto text-center shadow py-1 my-2" style="border-top: #f8f481 8px solid; background-color:#F4FCE4">
+                                @if (playerIndex == raceTo21.currentPlayer)
+                                {
+                                    <h6 class="text-success">@player.name </h6>
+                                }
+                                else
+                                {
+                                    <h6>@player.name </h6>
+                                }
+
+                            </div>
+                            <div class="my-2">
+                                @foreach (var card in player.cards)
+                                {
+                                    <img src="./sample-data/card_assets/@raceTo21.deck.cardImages[card.id]">
+                                }
+                            </div>
+                            <div class="rounded-circle bg-primary text-white my-2">@player.score /21</div>
+                            <h4>
+                                @if (player.status == PlayerStatus.bust)
+                                {
+                                    <strong>!!BUST!!</strong>
+                                }
+                                else if (player.status == PlayerStatus.stay)
+                                {
+                                    <strong>STAY</strong>
+                                }
+                            </h4>
+
+                        </div>
+                    }
+
+                </div>
+            </div>
+        </div>
+    }
+    @*Check for new round UI*@
+    else if (raceTo21.nextTask == GameTask.CheckForNewRound)
+    {
+        <div class="row mb-4 justify-content-around">
+            @for (int i = 0; i < 4; i++)
+            {
+                int playerIndex = i;
+                Player player = raceTo21.players[playerIndex];
+                @if (player.name == "")
+                {
+                    continue;
+                }
+
+                <div class="col-sm-2 text-center shadow rounded m-2" style="background-color:#c6e0fc;">
+                    <div class="row justify-content-end mt-2">
+                        <div class="col-auto">
+                            <button type="button"
+                                    style="border-radius: 50%; border:none; width:25px; height: 25px;" @onclick="()=>RemovePlayer(playerIndex)">
+                            x
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="col-sm-auto text-center shadow py-1 my-2"
+                             style="border-top: #f8f481 8px solid; background-color:#F4FCE4">
+                            <h6>@player.name </h6>
+                        </div>
+
+                        <div class="rounded-circle bg-primary text-white my-2">@player.score /21</div>
+                        <h4>
+                            @if (player.status == PlayerStatus.bust)
+                            {
+                                <strong>!!BUST!!</strong>
+                            }
+                            else if (player.status == PlayerStatus.win)
+                            {
+                                <strong class="text-success">Winner!</strong>
+                            }
+                        </h4>
+                    </div>
+                </div>
+            }
+        </div>
+        <div class="row justify-content-center mb-2">
+            <div class="col-auto">
+
+                <h1><strong> Game Over</strong></h1>
+
+            </div>
+        </div>
+
+        <div class="row justify-content-center mb-4">
+            <div class="col-sm-auto">
+
+                <button type="button" class="btn btn-info "@onclick="NewGame"> Play Again </button>
+
+            </div>
+        </div>
+
+        <div class="row mb-4 justify-content-around">
+            @for (int i = 4; i < 8; i++)
+            {
+                int playerIndex = i;
+                Player player = raceTo21.players[playerIndex];
+                @if (player.name == "")
+                {
+                    continue;
+                }
+
+                <div class="col-sm-2 text-center shadow rounded m-2" style="background-color:#c6e0fc;">
+                    <div class="row justify-content-end mt-2">
+                        <div class="col-auto">
+                            <button type="button"
+                                    style="border-radius: 50%; border:none; width:25px; height: 25px;" @onclick="()=>RemovePlayer(playerIndex)"> 
+                                x
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="col-sm-auto text-center shadow py-1 my-2"
+                             style="border-top: #f8f481 8px solid; background-color:#F4FCE4">
+                            <h6>@player.name </h6>
+                        </div>
+
+                        <div class="rounded-circle bg-primary text-white my-2">@player.score /21</div>
+                        <h4>
+                            @if (player.status == PlayerStatus.bust)
+                            {
+                                <strong>!!BUST!!</strong>
+                            }
+                            else if (player.status == PlayerStatus.win)
+                            {
+                                <strong class="text-success">Winner!</strong>
+                            }
+                        </h4>
+                    </div>
+                </div>
+            }
+        </div>
+
+    }
+
+
+</div>
+
+@code{
+    Game raceTo21;
+
+    protected override void OnInitialized()
+    {
+        raceTo21 = new Game(new CardTable());
+    }
+
+    public void StartPlay()
+    {//names filled in the blanks
+        raceTo21.numberOfPlayers = raceTo21.players.FindAll(p => p.name != "").Count;
+        raceTo21.nextTask = GameTask.PlayerTurn;
+
+        foreach (var player in raceTo21.players)
+        {
+            Card card = raceTo21.deck.DealTopCard();
+            player.cards.Add(card);
+            player.score = raceTo21.ScoreHand(player);
+        }
+    }
+    public void stay()
+    {
+        raceTo21.players[raceTo21.currentPlayer].status = PlayerStatus.stay;
+
+        if (CheckWinner() == false)
+        {
+            NextPlayer();
+
+        }
+    }
+    public void PickCard(int cardNumber)
+    {
+        Player player = raceTo21.players[raceTo21.currentPlayer];
+        for (int i = 0; i < cardNumber; i++)
+        {
+            Card card = raceTo21.deck.DealTopCard();
+            player.cards.Add(card);
+            player.score = raceTo21.ScoreHand(player);
+        }
+        if (player.score > 21)
+        {
+            player.status = PlayerStatus.bust;
+        }
+        else if (player.score == 21)
+        {
+            player.status = PlayerStatus.win;
+        }
+
+        if (CheckWinner() == false)
+        {
+            NextPlayer();
+
+        }
+
+    }
+
+    public void NextPlayer()
+    {
+        raceTo21.currentPlayer++;
+        if (raceTo21.currentPlayer > raceTo21.numberOfPlayers - 1)
+        {
+            raceTo21.currentPlayer = 0; // back to the first player...
+        }
+    }
+
+    public bool CheckWinner()
+    {
+        if (!raceTo21.CheckActivePlayers())
+        {
+            Player winner = raceTo21.DoFinalScoring();
+            winner.status = PlayerStatus.win;
+
+
+            raceTo21.cardTable.AnnounceWinner(winner);
+            raceTo21.nextTask = GameTask.CheckForNewRound;
+
+            return true;
+        }
+        return false;
+    }
+    public void RemovePlayer(int playerIndex)
+    {
+        raceTo21.players[playerIndex] = new Player("");
+        raceTo21.numberOfPlayers--;
+    }
+    public void NewGame()
+    {
+        if (raceTo21.numberOfPlayers < 2)
+        {
+            raceTo21 = new Game(new CardTable());
+        }
+        else
+        {
+            //排序，剩余玩家集合
+            raceTo21.players = raceTo21.players.OrderByDescending(p => p.name).ToList();
+            raceTo21.ShufflePlayer();//the players will have a new sequence
+            for (int i=0;i < raceTo21.numberOfPlayers;i++)
+            {
+                raceTo21.players[i].Reset();
+            }
+            raceTo21.nextTask = GameTask.PlayerTurn;
+            raceTo21.deck = new Deck();
+            raceTo21.deck.Shuffle();
+            raceTo21.currentPlayer = 0;
+            foreach (var player in raceTo21.players)
+            {
+                Card card = raceTo21.deck.DealTopCard();
+                player.cards.Add(card);
+                player.score = raceTo21.ScoreHand(player);
+            }
+        }
+    }
+}
